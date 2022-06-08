@@ -150,7 +150,6 @@ class FlutterCustomPaintPrinter {
         linesPaths.push('\t\tpath = Path();');
       }
 
-
       let color = path.color;
 
       if (color == null) {
@@ -175,7 +174,6 @@ class FlutterCustomPaintPrinter {
         linesPaths.push('\t\tpath.close();');
       }
 
-      console.log("Config : " + JSON.stringify(config));
       if (config?.pathTracingAll) {
         linesPaths.push('\t\tPathMetrics pathMetrics = path.computeMetrics();');
         linesPaths.push('\t\tfor (PathMetric pathMetric in pathMetrics) {');

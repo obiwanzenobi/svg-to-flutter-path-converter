@@ -18,31 +18,31 @@ class SvgToFlutterPathConverter {
 
   convertFromFilePath(filePath, config) {
     const data = fs.readFileSync(filePath, 'utf8');
-    
+
     const optimized = optimize(data, {
       convertStyleToAttrs: true,
     }).data;
-    
+
     return this.convertFromString(optimized, config);
   }
 
   convertFromString(svgString, config) {
     let wholeSvg = parseSync(svgString);
-    
+
     let parsedNodes = wholeSvg.children;
-    
+
     var width = wholeSvg.attributes.width;
     var height = wholeSvg.attributes.height;
 
-    if(wholeSvg.attributes.viewBox) {
+    if (wholeSvg.attributes.viewBox) {
       let viewBoxValues = wholeSvg.attributes.viewBox.split(" ");
       width = parseFloat(viewBoxValues[2]) - parseFloat(viewBoxValues[0]);
       height = parseFloat(viewBoxValues[1]) - parseFloat(viewBoxValues[3]);
     }
 
-
     let groups = this.flattenGroupAttribute(parsedNodes);
     let filteredNodes = this.filterSupportedNodes(groups, parsedNodes);
+    filteredNodes = this.mergeGlobalAttributes(wholeSvg.attributes, filteredNodes);
 
     let svgNodes = filteredNodes
       .map((element) => {
@@ -73,6 +73,31 @@ class SvgToFlutterPathConverter {
           (svgNode) => this.mergeGroupStylesIntoElements(group, svgNode)
         )
       );
+  }
+
+  mergeGlobalAttributes(globalAttributes, nodes) {
+    let filteredGlobalAttributes = this.filterFillStrokeAttributes(globalAttributes);
+
+    return nodes.map((svgNode) => this.mergeAttributesIntoNode(filteredGlobalAttributes, svgNode));
+  }
+
+  mergeAttributesIntoNode(attributes, node) {
+    return {
+      ...node,
+      "attributes": {
+        ...node.attributes,
+        ...attributes,
+      }
+    }
+  }
+
+  filterFillStrokeAttributes(attributes) {
+
+    let fillStrokeKeys = ["fill", "stroke-width", "stroke"];
+
+    return Object.fromEntries(Object.entries(attributes).filter(([key]) => { 
+      return fillStrokeKeys.includes(key); 
+    }));
   }
 
   styleStringToObject(styleString) {
@@ -231,16 +256,16 @@ function normalizeNumber(number) {
 }
 
 function changeLineCubicsToLines(values) {
-    function isCubicThatCouldBeLine(element) {
-        return (element[0] == "C") && element.length >= 6 && element[3] == element[5] && element[4] == element[6];
-    }
+  function isCubicThatCouldBeLine(element) {
+    return (element[0] == "C") && element.length >= 6 && element[3] == element[5] && element[4] == element[6];
+  }
 
-    return values.map((element) => {
-        if (isCubicThatCouldBeLine(element)) {
-            return ["L", ...element.slice(3, 5)];
-        }
-        return element;
-    });
+  return values.map((element) => {
+    if (isCubicThatCouldBeLine(element)) {
+      return ["L", ...element.slice(3, 5)];
+    }
+    return element;
+  });
 }
 
 function shapesToFlutterCodeConverter(shapes, width, height, config) {
@@ -316,7 +341,7 @@ function shapesToFlutterCodeConverter(shapes, width, height, config) {
     });
 
     let color = colorStringToObject(getFillFromNode(path.node));
-    
+
     let opacity = path.node.attributes.style['fill-opacity'] == '' ? null : path.node.attributes.style['fill-opacity'];
     if (color == null) {
       opacity = '1';

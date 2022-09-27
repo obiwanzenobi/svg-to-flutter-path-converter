@@ -23,7 +23,7 @@ class SvgToFlutterPathConverter {
       convertStyleToAttrs: true,
     }).data;
 
-    return this.convertFromString(optimized, config);
+    return this.convertFromString(data, config);
   }
 
   convertFromString(svgString, config) {
@@ -85,8 +85,8 @@ class SvgToFlutterPathConverter {
     return {
       ...node,
       "attributes": {
-        ...node.attributes,
         ...attributes,
+        ...node.attributes,
       }
     }
   }
@@ -95,8 +95,8 @@ class SvgToFlutterPathConverter {
 
     let fillStrokeKeys = ["fill", "stroke-width", "stroke"];
 
-    return Object.fromEntries(Object.entries(attributes).filter(([key]) => { 
-      return fillStrokeKeys.includes(key); 
+    return Object.fromEntries(Object.entries(attributes).filter(([key]) => {
+      return fillStrokeKeys.includes(key);
     }));
   }
 
@@ -113,8 +113,8 @@ class SvgToFlutterPathConverter {
       return {
         ...element,
         "attributes": {
-          ...element.attributes,
           ...group.attributes,
+          ...element.attributes,  
         }
       }
     } else {

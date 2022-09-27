@@ -16,8 +16,9 @@ const PaintType = {
 
 class PathOperation {
   createSizeDependentToken(sizeProperty, number, round) {
+    console.log('creating size: ' + number + " round " + round);
     const roundedNumber = helpers.roundNumber(number, round);
-
+    console.log('created size: ' + roundedNumber);
     if (roundedNumber == 0) {
       return '0';
     }
@@ -37,7 +38,7 @@ class MoveToOperation extends PathOperation {
     this.y = y;
   }
 
-  toFlutterCommand(round = 2) {
+  toFlutterCommand(round = 4) {
     const x = this.createSizeDependentToken('width', this.x, round);
     const y = this.createSizeDependentToken('height', this.y, round);
 
@@ -52,7 +53,7 @@ class LineToOperation extends PathOperation {
     this.y = y;
   }
 
-  toFlutterCommand(round = 2) {
+  toFlutterCommand(round = 4) {
     const x = this.createSizeDependentToken('width', this.x, round);
     const y = this.createSizeDependentToken('height', this.y, round);
 
@@ -71,7 +72,7 @@ class CubicToOperation extends PathOperation {
     this.y3 = y3;
   }
 
-  toFlutterCommand(round = 2) {
+  toFlutterCommand(round = 4) {
     const x1 = this.createSizeDependentToken('width', this.x1, round);
     const y1 = this.createSizeDependentToken('height', this.y1, round);
     const x2 = this.createSizeDependentToken('width', this.x2, round);
@@ -91,7 +92,7 @@ class AddOvalOperation extends PathOperation {
     this.radius = radius;
   }
 
-  toFlutterCommand(round = 2) {
+  toFlutterCommand(round = 4) {
     const x = this.createSizeDependentToken('width', this.x, round);
     const y = this.createSizeDependentToken('height', this.y, round);
     const radius = this.createSizeDependentToken('width', this.radius, round);

@@ -11,14 +11,17 @@ program
   .option('-o --output <outputPath>', 'Where to store the output file')
   .option('--path-tracing', 'Calculate path metrics and expose progress property. Default to false')
   .option('--path-tracing-all', 'Calculate path metrics and expose progress property. Draw all path segments at once. Default to false')
+  .option('--clip', 'Create clipper instead of a painter. Default to false')
   .action(function(filePath, options) {
     converter = new SvgToFlutterPathConverter();
-    let tracing = options.pathTracing;
-    let tracingAll = options.pathTracingAll;
+    let tracing = options.pathTracing ?? false;
+    let tracingAll = options.pathTracingAll ?? false;
+    let clip = options.clip ?? false;
 
     let config = {
-      pathTracing: tracing,
-      pathTracingAll: tracingAll
+      pathTracing: tracing && !clip,
+      pathTracingAll: tracingAll && !clip,
+      clip: clip,
     }
     
     flutterPathString = converter.convertFromFilePath(filePath, config);

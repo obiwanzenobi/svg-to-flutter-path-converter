@@ -246,6 +246,7 @@ function path2curve(path, path2) {
                 return ["C", d.x, d.y, d.x, d.y, d.x, d.y];
             }
             !(path[0] in {T: 1, Q: 1}) && (d.qx = d.qy = null);
+
             switch (path[0]) {
                 case "M":
                     d.X = path[1];

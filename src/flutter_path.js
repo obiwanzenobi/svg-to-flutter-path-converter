@@ -16,9 +16,9 @@ const PaintType = {
 
 class PathOperation {
   createSizeDependentToken(sizeProperty, number, round) {
-    console.log('creating size: ' + number + " round " + round);
+
     const roundedNumber = helpers.roundNumber(number, round);
-    console.log('created size: ' + roundedNumber);
+
     if (roundedNumber == 0) {
       return '0';
     }
@@ -113,7 +113,12 @@ class FlutterPathPrinter {
 
 class FlutterCustomPaintPrinter {
   print(paths, config) {
-    let definition = [`class ${config?.name ?? 'MyPainter'} extends CustomPainter {`];
+    let definition = []
+    if (config.clip) {
+      definition.push(`class ${config?.name ?? 'MyClipper'} extends CustomClipper<Path> {`);
+    } else {
+      definition.push(`class ${config?.name ?? 'MyPainter'} extends CustomPainter {`);
+    }
 
     if (config?.pathTracing) {
       definition = definition.concat([
@@ -124,22 +129,49 @@ class FlutterCustomPaintPrinter {
       ]);
     }
 
-    const linesBefore = [
-      '\t@override',
-      '\tvoid paint(Canvas canvas, Size size) {',
-      '\t\tPath path = Path();',
-      '\t\tfinal Paint paint = Paint();'
-    ];
+    let linesBefore = []
 
-    const linesAfter = [
-      '\t}',
-      '',
-      '\t@override',
-      '\tbool shouldRepaint(CustomPainter oldDelegate) {',
-      '\t\treturn true;',
-      '\t}',
-      '}'
-    ];
+    if (config.clip) {
+      linesBefore = [
+        '\t@override',
+        '\tPath getClip(Size size) {',
+        '\t\tPath path = Path();',
+      ];
+    } else {
+      linesBefore = [
+        '\t@override',
+        '\tvoid paint(Canvas canvas, Size size) {',
+        '\t\tPath path = Path();',
+        '\t\tfinal Paint paint = Paint();'
+      ];
+    }
+    let linesAfter = [];
+
+    if (config.clip) {
+      linesAfter =
+        [
+          '\t}',
+          '',
+          '\t@override',
+          '\tbool shouldReclip(covariant CustomClipper<Path> oldClipper) {',
+          '\t\treturn true;',
+          '\t}',
+          '}'
+        ]
+
+    } else {
+      linesAfter =
+        [
+          '\t}',
+          '',
+          '\t@override',
+          '\tbool shouldRepaint(CustomPainter oldDelegate) {',
+          '\t\treturn true;',
+          '\t}',
+          '}'
+        ]
+
+    }
 
     let linesPaths = [];
 
@@ -147,24 +179,26 @@ class FlutterCustomPaintPrinter {
       linesPaths.push('');
       linesPaths.push(`\t\t// Path ${index + 1} ${path.paintType}`);
 
-      if (index > 0) {
-        linesPaths.push('\t\tpath = Path();');
-      }
+      if (!config.clip) {
+        if (index > 0) {
+          linesPaths.push('\t\tpath = Path();');
+        }
 
-      let color = path.color;
+        let color = path.color;
 
-      if (color == null) {
-        color = '000000';
-      }
+        if (color == null) {
+          color = '000000';
+        }
 
-      const opacityString = path.opacity ? `.withOpacity(${path.opacity})` : '';
-      const colorCommand = "paint.color = const Color(0xff" + color + ")" + opacityString + ";"
-      const colorCommandString = `\t\t${colorCommand}`;
+        const opacityString = path.opacity ? `.withOpacity(${path.opacity})` : '';
+        const colorCommand = "paint.color = const Color(0xff" + color + ")" + opacityString + ";"
+        const colorCommandString = `\t\t${colorCommand}`;
 
-      linesPaths.push(colorCommandString);
-      if (path.paintType == PaintType.Stroke) {
-        linesPaths.push('\t\tpaint.style = PaintingStyle.stroke;');
-        linesPaths.push('\t\tpaint.strokeWidth = ' + (path.strokeWidth ? path.strokeWidth : '1') + ';');
+        linesPaths.push(colorCommandString);
+        if (path.paintType == PaintType.Stroke) {
+          linesPaths.push('\t\tpaint.style = PaintingStyle.stroke;');
+          linesPaths.push('\t\tpaint.strokeWidth = ' + (path.strokeWidth ? path.strokeWidth : '1') + ';');
+        }
       }
 
       path.operations.forEach((operation) => {
@@ -176,8 +210,8 @@ class FlutterCustomPaintPrinter {
       }
 
       if (config?.pathTracingAll) {
-        linesPaths.push('\t\tPathMetrics pathMetrics = path.computeMetrics();');
-        linesPaths.push('\t\tfor (PathMetric pathMetric in pathMetrics) {');
+        linesPaths.push(`\t\tPathMetrics pathMetrics${index} = path.computeMetrics();`);
+        linesPaths.push(`\t\tfor (PathMetric pathMetric in pathMetrics${index}) {`);
         linesPaths.push('\t\t\tPath extractPath = pathMetric.extractPath(');
         linesPaths.push('\t\t\t\t0.0,');
         linesPaths.push('\t\t\t\tpathMetric.length * progress,');
@@ -187,16 +221,16 @@ class FlutterCustomPaintPrinter {
         linesPaths.push('\t\t}');
       } else if (config?.pathTracing) {
         linesPaths.push('');
-        linesPaths.push('\t\tList<PathMetric> pathMetrics = path.computeMetrics().toList();');
-        linesPaths.push('');
-        
-        linesPaths.push('\t\tfinal numberOfOperations = pathMetrics.length;');
-        linesPaths.push('\t\tfinal singleOperationTime = 1.0 / numberOfOperations;');
-        linesPaths.push('\t\tfinal index = (progress / singleOperationTime).floor();');
+        linesPaths.push(`\t\tList<PathMetric> pathMetrics${index} = path.computeMetrics().toList();`);
         linesPaths.push('');
 
-        linesPaths.push('\t\tif(index > 0) {');
-        linesPaths.push('\t\t\tList<PathMetric> completePaths = pathMetrics.sublist(0, index);');
+        linesPaths.push(`\t\tfinal numberOfOperations${index} = pathMetrics${index}.length;`);
+        linesPaths.push(`\t\tfinal singleOperationTime${index} = 1.0 / numberOfOperations${index};`);
+        linesPaths.push(`\t\tfinal index${index} = (progress / singleOperationTime${index}).floor();`);
+        linesPaths.push('');
+
+        linesPaths.push(`\t\tif(index${index} > 0) {`);
+        linesPaths.push(`\t\t\tList<PathMetric> completePaths = pathMetrics${index}.sublist(0, index${index});`);
         linesPaths.push('\t\t\tfor (final path in completePaths) {');
         linesPaths.push('\t\t\t\tPath extractPath = path.extractPath(');
         linesPaths.push('\t\t\t\t\t0.0,');
@@ -205,22 +239,24 @@ class FlutterCustomPaintPrinter {
         linesPaths.push('\t\t\t\tcanvas.drawPath(extractPath, paint);');
         linesPaths.push('\t\t\t}');
         linesPaths.push('\t\t}');
-        
-        linesPaths.push('');      
 
-        linesPaths.push('\t\tif(index >= numberOfOperations) {');
+        linesPaths.push('');
+
+        linesPaths.push(`\t\tif(index${index} >= numberOfOperations${index}) {`);
         linesPaths.push('\t\t\treturn;');
         linesPaths.push('\t\t}');
 
         linesPaths.push('');
 
-        linesPaths.push('\t\tfinal actualMetric = pathMetrics.elementAt(index);');
-        linesPaths.push('\t\tfinal localProgress = (progress - (singleOperationTime * index)) / singleOperationTime;');
-        linesPaths.push('\t\tPath extractPath = actualMetric.extractPath(');
+        linesPaths.push(`\t\tfinal actualMetric${index} = pathMetrics${index}.elementAt(index${index});`);
+        linesPaths.push(`\t\tfinal localProgress${index} = (progress - (singleOperationTime${index} * index${index})) / singleOperationTime${index};`);
+        linesPaths.push(`\t\tPath extractPath${index} = actualMetric${index}.extractPath(`);
         linesPaths.push('\t\t\t0.0,');
-        linesPaths.push('\t\t\tactualMetric.length * localProgress,');
+        linesPaths.push(`\t\t\tactualMetric${index}.length * localProgress${index},`);
         linesPaths.push('\t\t);');
-        linesPaths.push('\t\tcanvas.drawPath(extractPath, paint);');
+        linesPaths.push(`\t\tcanvas.drawPath(extractPath${index}, paint);`);
+      } else if(config.clip) {
+        linesPaths.push('\t\treturn path;');
       } else {
         linesPaths.push('\t\tcanvas.drawPath(path, paint);');
       }

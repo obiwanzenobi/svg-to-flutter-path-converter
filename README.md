@@ -53,6 +53,13 @@ Usage: svg-to-flutter [options] [command]
 Commands:
   convert <filePath> [options]  Convert svg file to Flutter path
   help [command]      display help for command
+Flags:
+
+  --clip Create CustomClipper<Path> for given SVG
+  --path-tracing Create path tracing animation painter
+  --path-tracing-all Create path tracing animation with all paths at once
+
+Path tracing works best with strokes.
 ```
 
 ## Store the result on the file system

@@ -16,7 +16,7 @@ const PaintType = {
 
 class PathOperation {
   createSizeDependentToken(sizeProperty, number, round) {
-
+  
     const roundedNumber = helpers.roundNumber(number, round);
 
     if (roundedNumber == 0) {

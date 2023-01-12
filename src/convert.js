@@ -36,8 +36,8 @@ class SvgToFlutterPathConverter {
 
     if (wholeSvg.attributes.viewBox) {
       let viewBoxValues = wholeSvg.attributes.viewBox.split(" ");
-      width = parseFloat(viewBoxValues[2]) - parseFloat(viewBoxValues[0]);
-      height = parseFloat(viewBoxValues[1]) - parseFloat(viewBoxValues[3]);
+      width = Math.abs(parseFloat(viewBoxValues[2]) - parseFloat(viewBoxValues[0]));
+      height = Math.abs(parseFloat(viewBoxValues[1]) - parseFloat(viewBoxValues[3]));
     }
 
     let groups = this.flattenGroupAttribute(parsedNodes);
@@ -323,6 +323,7 @@ function shapesToFlutterCodeConverter(shapes, width, height, config) {
     }
 
     path.preparedPath.forEach((segment) => {
+
       switch (segment[0]) {
         case "M":
           pathOperations.push(
@@ -352,6 +353,7 @@ function shapesToFlutterCodeConverter(shapes, width, height, config) {
           break;
       }
     });
+
 
     let color = colorStringToObject(getFillFromNode(path.node));
 
